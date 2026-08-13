@@ -31,7 +31,6 @@
           "mode": "auto",
           "extra": {
             "xPaddingBytes": "100-1000",
-            "noGRPCHeader": false,
             "scMaxEachPostBytes": 1000000,
             "scMinPostsIntervalMs": "10-50",
             "xmux": {

@@ -70,6 +70,8 @@ To use your own decoy, drop any static site into `node/web/` before installing.
 - Routing: CN/RU destinations are blocked by default; Google is whitelisted.
 - XMUX connection rotation (randomized reuse ranges) is the core anti-RKN
   mechanism — client-side only, see `profiles/vless-xhttp-tls.client.json`.
+  Note: stream-up uplinks also carry a gRPC `Content-Type` header by default
+  (camouflage, not the gRPC protocol; `noGRPCHeader` can disable it).
 - Optional: encrypt the Panel↔Node channel with a post-quantum WireGuard tunnel
   (Rosenpass) — see `vpn/`.
 
