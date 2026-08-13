@@ -3,54 +3,33 @@
 Minimal, security-first Podman installers for a **Remnawave Panel** and **Node** stack.
 Default transport: **VLESS + XHTTP** behind a TLS-terminating reverse proxy (Caddy, ACME).
 
-Plain bash + Podman Compose. No Kubernetes, no systemd units, no client generator.
+Plain bash + Podman Compose.
 
-## Requirements
+## Install
 
-- Podman with `podman compose` or `podman-compose`
-- A domain (or subdomain) pointing to each server (Panel domain, one per Node)
-- Ports `80`/`443` reachable for ACME; `NODE_PORT` reachable from the Panel IP only
-
-## Quickstart
-
-One-liner (fetches the repo, then runs the installer):
+On each server, run:
 
 ```sh
-# Panel server
-curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash -s -- panel
-# Node server
-curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash -s -- node
+curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash
 ```
 
-Or clone the repo and run `panel/install.sh` / `node/install.sh` directly.
-All scripts refuse to run as root.
+The script asks whether to install the **panel** or a **node**, checks dependencies,
+generates secrets, and starts the stack. It refuses to run as root; for rootless
+Podman to bind ports 80/443, allow unprivileged low ports once:
+`sudo sysctl -w net.ipv4.ip_unprivileged_port_start=0`.
 
-### 1. Panel server
+Installs to `~/.local/share/remnawave-podman`; re-running updates files but keeps
+`.env`, `web/` and `sockets/`.
 
-```sh
-cd panel
-./install.sh
-```
+### After installing the panel
 
-Generates secrets, prompts for the panel domain, starts the stack.
 Open `https://<panel-domain>` and register the first account — it becomes super-admin.
 
-### 2. Node server
+### After installing a node
 
-```sh
-cd node
-./install.sh
-```
-
-Prompts for `NODE_PORT`, `SECRET_KEY`, `NODE_DOMAIN`; downloads a decoy web app
-(skip with `--no-decoy`); starts the stack. Re-running keeps existing values.
-To use your own decoy, drop any static site into `node/web/` before installing.
-
-### 3. Add the node in the Panel
-
-- address = `NODE_DOMAIN`, port = `NODE_PORT`
-- config profile: `VLESS-XHTTP-TLS` (see `profiles/`)
-- Host: network `xhttp`, security `tls`, port `443`, SNI = `NODE_DOMAIN`, path `/x`
+In the Panel: add the node (address = `NODE_DOMAIN`, port = `NODE_PORT`, profile
+`VLESS-XHTTP-TLS`), then create a Host (network `xhttp`, security `tls`, port `443`,
+SNI = `NODE_DOMAIN`, path `/x`).
 
 ## Firewall
 
@@ -59,13 +38,31 @@ To use your own decoy, drop any static site into `node/web/` before installing.
 
 ## Notes
 
-- The scripts refuse to run as root (user-level only). For rootless Podman to
-  bind ports 80/443, allow unprivileged low ports once:
-  `sudo sysctl -w net.ipv4.ip_unprivileged_port_start=0` (or use an ACME DNS challenge).
 - The Node's Xray core listens on a Unix socket (no TCP port); all traffic on `443`
-  goes through the TLS-terminating proxy, and non-tunnel requests get the decoy site.
-- Routing: CN/RU destinations are blocked by default; Google is whitelisted.
-- Design details and rationale: [`docs/DESIGN.md`](docs/DESIGN.md)
+  goes through the TLS-terminating proxy, and non-tunnel requests get a decoy site.
+- Routing: CN/RU destinations are blocked by default; the Google whitelist
+  (incl. CN-reachable endpoints like `gstatic.cn`/`googleapis.cn`) is evaluated
+  first so Google pages don't lose their CDN assets to the CN block.
+- Anti-RKN: XMUX connection rotation + randomized header padding live in the
+  profile's `xhttpSettings.extra` (flows to both Node and clients; per-node
+  override via the Host's `xhttpExtraParams`). Transport is H2-only.
+- Optional: post-quantum Panel↔Node tunnel (WireGuard + Rosenpass) — see `vpn/`.
+- Multi-node client templates (`profiles/xray-json-template*.json`): paste into
+  Panel → Subscription → Templates → Xray JSON, assign to a visible virtual
+  Host; name participating Hosts `proxy-*` and hide them. `xray-json-template.json`
+  uses Cloudflare DoH; `xray-json-template-mullvad.json` (Mullvad DoH) is the
+  paranoid variant — injected outbounds are tagged `tor*` and `.onion` traffic is
+  routed through them to the node's Tor exit.
+  Setup checklist: (1) Node → Change Profile → `VLESS-XHTTP-TLS[-TOR]`;
+  (2) Subscription → Settings → enable **Serve JSON at base subscription**
+  (otherwise v2rayN-class clients get Base64 and never see the injected
+  balancer/routing); (3) virtual Host → Advanced → select the template;
+  (4) participating `proxy-*` Hosts hidden and enabled;
+  (5) enable the inbound in the user's Internal Squad.
+- Optional Tor exit ("dokomo-door"): the node installer can start an official Tor
+  container (SOCKS5 on 127.0.0.1:9050, never installed on the host). Use the
+  `VLESS-XHTTP-TLS-TOR` profile (`profiles/vless-xhttp-tls-TOR.json`) to route
+  `.onion` destinations to it; the plain profile ignores it.
 
 ## Sources
 

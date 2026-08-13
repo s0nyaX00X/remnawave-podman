@@ -1,0 +1,5 @@
+# Minimal client-only Tor for the "dokomo-door" SOCKS exit.
+# No relay, no exit: this just lets Xray hand .onion traffic to Tor.
+SOCKSPort 127.0.0.1:9050
+DataDirectory /var/lib/tor
+Log notice stdout

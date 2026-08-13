@@ -1,11 +1,23 @@
+{
+	admin off
+}
+
 NODE_DOMAIN {
-    root * /srv/web
-    handle /x/* {
-        reverse_proxy unix//var/run/remnawave/xray.sock
-    }
-    handle {
-        encode zstd gzip
-        try_files {path} /index.html
-        file_server
-    }
+	tls {
+		alpn h2
+	}
+	root * /srv/web
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	handle /x/* {
+		reverse_proxy unix//var/run/remnawave/xray.sock {
+			transport http {
+				versions h2c 2
+			}
+		}
+	}
+	handle {
+		encode zstd gzip
+		try_files {path} /index.html
+		file_server
+	}
 }

@@ -54,6 +54,18 @@
       "tag": "BLOCK",
       "protocol": "blackhole",
       "settings": {}
+    },
+    {
+      "tag": "dokomo-door",
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 9050
+          }
+        ]
+      }
     }
   ],
   "routing": {
@@ -65,6 +77,13 @@
           "geoip:private"
         ],
         "outboundTag": "BLOCK"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "regexp:.*\\.onion$"
+        ],
+        "outboundTag": "dokomo-door"
       },
       {
         "type": "field",

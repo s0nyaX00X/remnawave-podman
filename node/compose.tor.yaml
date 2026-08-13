@@ -1,0 +1,7 @@
+services:
+  tor:
+    image: docker.io/library/tor:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./torrc:/etc/tor/torrc:ro
