@@ -6,7 +6,7 @@
           "type": "remarkRegex",
           "pattern": "^proxy-"
         },
-        "tagPrefix": "proxy"
+        "tagPrefix": "tor"
       }
     ]
   },
@@ -19,7 +19,7 @@
       "connectivity": ""
     },
     "subjectSelector": [
-      "proxy"
+      "tor"
     ]
   },
   "dns": {
@@ -33,7 +33,7 @@
       {
         "tag": "Super_Balancer",
         "selector": [
-          "proxy"
+          "tor"
         ],
         "strategy": {
           "type": "leastLoad",
@@ -56,6 +56,13 @@
           "geoip:private"
         ],
         "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "regexp:.*\\.onion$"
+        ],
+        "balancerTag": "Super_Balancer"
       },
       {
         "type": "field",

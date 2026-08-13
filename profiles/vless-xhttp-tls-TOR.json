@@ -1,0 +1,121 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "tag": "VLESS-XHTTP-TLS",
+      "listen": "unix:/var/run/remnawave/xray.sock",
+      "port": 443,
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "none",
+        "xhttpSettings": {
+          "path": "/x",
+          "mode": "auto",
+          "extra": {
+            "xPaddingBytes": "100-1000",
+            "scMaxBufferedPosts": 30,
+            "scStreamUpServerSecs": "20-80",
+            "scMinPostsIntervalMs": "10-50",
+            "xmux": {
+              "maxConcurrency": "16-32",
+              "maxConnections": 0,
+              "cMaxReuseTimes": 0,
+              "hMaxRequestTimes": "600-900",
+              "hMaxReusableSecs": "1800-3000",
+              "hKeepAlivePeriod": 0
+            }
+          }
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "DIRECT",
+      "protocol": "freedom",
+      "settings": {}
+    },
+    {
+      "tag": "BLOCK",
+      "protocol": "blackhole",
+      "settings": {}
+    },
+    {
+      "tag": "dokomo-door",
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 9050
+          }
+        ]
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "BLOCK"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "regexp:.*\\.onion$"
+        ],
+        "outboundTag": "dokomo-door"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:google",
+          "geosite:youtube",
+          "domain:gmail.com",
+          "domain:gemini.google.com",
+          "domain:gemini.google",
+          "domain:googleapis.cn",
+          "domain:googleapis-cn.com",
+          "domain:gstatic.cn",
+          "domain:gstatic-cn.com"
+        ],
+        "outboundTag": "DIRECT"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:cn",
+          "geoip:ru"
+        ],
+        "outboundTag": "BLOCK"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:cn",
+          "geosite:category-ru"
+        ],
+        "outboundTag": "BLOCK"
+      }
+    ]
+  }
+}
