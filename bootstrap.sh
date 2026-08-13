@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-shot installer: curl -fsSL <this-URL> | bash
-# Interactive: asks panel|node, then downloads the repo to
+# Interactive: arrow-key menu for panel|node, then downloads the repo to
 # ~/.local/share/remnawave-podman and runs the target installer.
 set -euo pipefail
 
@@ -29,14 +29,53 @@ for dep in curl tar; do
   fi
 done
 
+# Arrow-key radio menu; sets TARGET. Only usable on a real terminal.
+select_target() {
+  local options=("panel" "node")
+  local n=${#options[@]}
+  local sel=0 key esc i
+
+  printf 'which do you want to install:\n'
+  for i in "${!options[@]}"; do
+    printf '[%s] %s\n' "$([[ $i -eq 0 ]] && echo '*' || echo ' ')" "${options[$i]}"
+  done
+  printf '\033[%dA' "$n"   # cursor to first option
+
+  while :; do
+    read -rsn1 key
+    case "$key" in
+      $'\x1b')
+        read -rsn2 esc
+        case "$esc" in
+          '[A') sel=$(( (sel + n - 1) % n )) ;;
+          '[B') sel=$(( (sel + 1) % n )) ;;
+        esac
+        ;;
+      ''|$'\r') break ;;
+    esac
+    for i in "${!options[@]}"; do
+      printf '\033[2K\r[%s] %s\n' "$([[ $i -eq $sel ]] && echo '*' || echo ' ')" "${options[$i]}"
+    done
+    printf '\033[%dA' "$n"
+  done
+
+  printf '\033[%dB' "$n"   # below the menu
+  printf '\r\033[K'
+  TARGET="${options[$sel]}"
+}
+
 TARGET="${1:-}"
 if [[ "$TARGET" != "panel" && "$TARGET" != "node" ]]; then
-  read -r -p "Install (panel|node) [panel]: " TARGET
-  TARGET="${TARGET:-panel}"
-  case "$TARGET" in
-    panel|node) ;;
-    *) error "unknown target: $TARGET (use panel or node)"; exit 1 ;;
-  esac
+  if [[ -t 0 ]]; then
+    select_target
+  else
+    read -r -p "Install (panel|node) [panel]: " TARGET
+    TARGET="${TARGET:-panel}"
+    case "$TARGET" in
+      panel|node) ;;
+      *) error "unknown target: $TARGET (use panel or node)"; exit 1 ;;
+    esac
+  fi
 fi
 
 DEST="${XDG_DATA_HOME:-$HOME/.local/share}/remnawave-podman"
