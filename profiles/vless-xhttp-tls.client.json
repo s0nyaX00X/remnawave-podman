@@ -24,7 +24,7 @@
         "tlsSettings": {
           "serverName": "NODE_DOMAIN",
           "fingerprint": "chrome",
-          "alpn": ["h2", "http/1.1"]
+          "alpn": ["h2"]
         },
         "xhttpSettings": {
           "path": "/x",

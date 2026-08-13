@@ -3,6 +3,9 @@
 }
 
 PANEL_DOMAIN {
+	tls {
+		alpn h2
+	}
 	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	reverse_proxy remnawave:3000
 }

@@ -72,6 +72,8 @@ To use your own decoy, drop any static site into `node/web/` before installing.
   mechanism — client-side only, see `profiles/vless-xhttp-tls.client.json`.
   Note: stream-up uplinks also carry a gRPC `Content-Type` header by default
   (camouflage, not the gRPC protocol; `noGRPCHeader` can disable it).
+- Transport is **H2-only** (ALPN `h2` everywhere, HTTP/1.1 disabled);
+  QUIC/H3 is an optional client-side extra.
 - Optional: encrypt the Panel↔Node channel with a post-quantum WireGuard tunnel
   (Rosenpass) — see `vpn/`.
 
