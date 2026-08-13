@@ -69,7 +69,13 @@ To use your own decoy, drop any static site into `node/web/` before installing.
   goes through the TLS-terminating proxy, and non-tunnel requests get the decoy site.
 - Routing: CN/RU destinations are blocked by default; Google is whitelisted.
 - XMUX connection rotation (randomized reuse ranges) is the core anti-RKN
-  mechanism — client-side only, see `profiles/vless-xhttp-tls.client.json`.
+  mechanism. In Remnawave the profile's `xhttpSettings.extra` is the single
+  source of truth: the Panel passes it through to the Node's xray config AND
+  uses it as the default `extra` for generated client configs (verified in
+  remnawave/backend `resolve-proxy-config.service.ts`: Host override wins,
+  profile extra is the fallback). Per-node override: the Host form's
+  `xhttpExtraParams` field; full client JSON control: Subscription → Templates →
+  Xray JSON. Reference: `profiles/vless-xhttp-tls.client.json`.
   Note: stream-up uplinks also carry a gRPC `Content-Type` header by default
   (camouflage, not the gRPC protocol; `noGRPCHeader` can disable it).
 - Transport is **H2-only** (ALPN `h2` everywhere, HTTP/1.1 disabled);

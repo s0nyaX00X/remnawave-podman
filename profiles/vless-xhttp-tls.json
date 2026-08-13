@@ -18,9 +18,20 @@
         "xhttpSettings": {
           "path": "/x",
           "mode": "auto",
-          "xPaddingBytes": "100-1000",
-          "scMaxBufferedPosts": 30,
-          "scStreamUpServerSecs": "20-80"
+          "extra": {
+            "xPaddingBytes": "100-1000",
+            "scMaxBufferedPosts": 30,
+            "scStreamUpServerSecs": "20-80",
+            "scMinPostsIntervalMs": "10-50",
+            "xmux": {
+              "maxConcurrency": "16-32",
+              "maxConnections": 0,
+              "cMaxReuseTimes": 0,
+              "hMaxRequestTimes": "600-900",
+              "hMaxReusableSecs": "1800-3000",
+              "hKeepAlivePeriod": 0
+            }
+          }
         }
       },
       "sniffing": {

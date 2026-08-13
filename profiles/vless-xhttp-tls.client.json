@@ -31,7 +31,8 @@
           "mode": "auto",
           "extra": {
             "xPaddingBytes": "100-1000",
-            "scMaxEachPostBytes": 1000000,
+            "scMaxBufferedPosts": 30,
+            "scStreamUpServerSecs": "20-80",
             "scMinPostsIntervalMs": "10-50",
             "xmux": {
               "maxConcurrency": "16-32",
