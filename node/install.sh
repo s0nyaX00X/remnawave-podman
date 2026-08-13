@@ -47,11 +47,12 @@ for arg in "$@"; do
 done
 
 # Re-runs keep existing values (rotating SECRET_KEY would break the panel pairing).
-OLD_PORT=""; OLD_SECRET=""; OLD_DOMAIN=""
+OLD_PORT=""; OLD_SECRET=""; OLD_DOMAIN=""; OLD_TOR=""
 if [[ -f .env ]]; then
   OLD_PORT="$(sed -nE 's|^NODE_PORT=||p' .env | tail -n 1)"
   OLD_SECRET="$(sed -nE 's|^SECRET_KEY=||p' .env | tail -n 1)"
   OLD_DOMAIN="$(sed -nE 's|^NODE_DOMAIN=||p' .env | tail -n 1)"
+  OLD_TOR="$(sed -nE 's|^ENABLE_TOR=||p' .env | tail -n 1)"
 fi
 
 read -r -p "NODE_PORT [${OLD_PORT:-2222}]: " NODE_PORT
@@ -66,10 +67,19 @@ while [[ -z "${NODE_DOMAIN:-}" ]]; do
   NODE_DOMAIN="${NODE_DOMAIN:-${OLD_DOMAIN:-}}"
 done
 
+tor_default="${OLD_TOR:-n}"
+read -r -p "Enable Tor exit container for the TOR profile? [y/N] (${tor_default}): " enable_tor
+enable_tor="${enable_tor:-${tor_default}}"
+case "$enable_tor" in
+  y|Y|yes|YES) ENABLE_TOR=1 ;;
+  *) ENABLE_TOR=0 ;;
+esac
+
 cat > .env <<EOF
 NODE_PORT=${NODE_PORT}
 SECRET_KEY=${SECRET_KEY}
 NODE_DOMAIN=${NODE_DOMAIN}
+ENABLE_TOR=${ENABLE_TOR}
 EOF
 chmod 600 .env
 
@@ -102,11 +112,29 @@ sed "s|NODE_DOMAIN|${NODE_DOMAIN}|g" Caddyfile.template > Caddyfile
 info "starting node stack (${COMPOSE_CMD[*]} up -d)"
 "${COMPOSE_CMD[@]}" -f compose.yaml up -d
 
+if [[ "$ENABLE_TOR" -eq 1 ]]; then
+  info "starting Tor exit container (dokomo-door, SOCKS5 @127.0.0.1:9050)..."
+  "${COMPOSE_CMD[@]}" -f compose.tor.yaml up -d
+  ok "Tor container started"
+elif [[ "${OLD_TOR:-n}" == [yY]* ]] || [[ "${OLD_TOR:-}" == "1" ]]; then
+  info "Tor was previously enabled; stopping container (compose.tor.yaml down)..."
+  "${COMPOSE_CMD[@]}" -f compose.tor.yaml down 2>/dev/null || true
+  info "Tor container stopped"
+else
+  info "Tor container disabled (ENABLE_TOR=0); re-run installer to enable"
+fi
+
 echo
 ok "node stack started"
 info "Panel-side setup:"
 echo "  add node: address=${NODE_DOMAIN}, port=${NODE_PORT}"
 echo "  secret    = ${SECRET_KEY} (also stored in node/.env)"
-echo "  select profile: VLESS-XHTTP-TLS"
+echo "  select profile: VLESS-XHTTP-TLS${ENABLE_TOR:+ or VLESS-XHTTP-TLS-TOR (Tor exit)}"
 echo "  open NODE_PORT only to the Panel IP"
 echo "  create Host: vless, port 443, SNI=${NODE_DOMAIN}, path=/x, network=xhttp, security=tls"
+if [[ "$ENABLE_TOR" -eq 1 ]]; then
+  echo
+  info "Tor (dokomo-door) details:"
+  echo "  SOCKS5 127.0.0.1:9050 inside the node network (container, never installed locally)"
+  echo "  the VLESS-XHTTP-TLS-TOR profile routes .onion domains to it"
+fi

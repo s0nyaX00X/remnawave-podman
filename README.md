@@ -51,7 +51,12 @@ SNI = `NODE_DOMAIN`, path `/x`).
   Panel → Subscription → Templates → Xray JSON, assign to a visible virtual
   Host; name participating Hosts `proxy-*` and hide them. `xray-json-template.json`
   uses Cloudflare DoH; `xray-json-template-mullvad.json` (Mullvad DoH) is the
-  paranoid variant — reserved for upcoming extensions.
+  paranoid variant — injected outbounds are tagged `tor*` and `.onion` traffic is
+  routed through them to the node's Tor exit.
+- Optional Tor exit ("dokomo-door"): the node installer can start an official Tor
+  container (SOCKS5 on 127.0.0.1:9050, never installed on the host). Use the
+  `VLESS-XHTTP-TLS-TOR` profile (`profiles/vless-xhttp-tls-TOR.json`) to route
+  `.onion` destinations to it; the plain profile ignores it.
 
 ## Sources
 
