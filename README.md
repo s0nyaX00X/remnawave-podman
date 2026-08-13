@@ -40,7 +40,9 @@ SNI = `NODE_DOMAIN`, path `/x`).
 
 - The Node's Xray core listens on a Unix socket (no TCP port); all traffic on `443`
   goes through the TLS-terminating proxy, and non-tunnel requests get a decoy site.
-- Routing: CN/RU destinations are blocked by default; Google is whitelisted.
+- Routing: CN/RU destinations are blocked by default; the Google whitelist
+  (incl. CN-reachable endpoints like `gstatic.cn`/`googleapis.cn`) is evaluated
+  first so Google pages don't lose their CDN assets to the CN block.
 - Anti-RKN: XMUX connection rotation + randomized header padding live in the
   profile's `xhttpSettings.extra` (flows to both Node and clients; per-node
   override via the Host's `xhttpExtraParams`). Transport is H2-only.

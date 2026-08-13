@@ -69,7 +69,15 @@
       {
         "type": "field",
         "domain": [
-          "geosite:google"
+          "geosite:google",
+          "geosite:youtube",
+          "domain:gmail.com",
+          "domain:gemini.google.com",
+          "domain:gemini.google",
+          "domain:googleapis.cn",
+          "domain:googleapis-cn.com",
+          "domain:gstatic.cn",
+          "domain:gstatic-cn.com"
         ],
         "outboundTag": "DIRECT"
       },
