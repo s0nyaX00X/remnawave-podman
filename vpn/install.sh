@@ -7,21 +7,33 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# Color helpers: [info] [ok] [warn] [error] — colors only when stdout is a TTY
+# (and NO_COLOR is unset); tags stay in logs/pipes.
+if [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+  C_INFO='\033[1;34m'; C_OK='\033[1;32m'; C_WARN='\033[1;33m'; C_ERR='\033[1;31m'; C_END='\033[0m'
+else
+  C_INFO=''; C_OK=''; C_WARN=''; C_ERR=''; C_END=''
+fi
+info()  { printf '%b[info]%b %s\n' "$C_INFO" "$C_END" "$*"; }
+ok()    { printf '%b[ok]%b %s\n' "$C_OK" "$C_END" "$*"; }
+warn()  { printf '%b[warn]%b %s\n' "$C_WARN" "$C_END" "$*" >&2; }
+error() { printf '%b[error]%b %s\n' "$C_ERR" "$C_END" "$*" >&2; }
+
 # Refuse root: keygen and config generation are user-level.
 if [[ "$(id -u)" -eq 0 ]]; then
-  echo "error: refusing to run as root; run as your normal user" >&2
+  error "refusing to run as root; run as your normal user"
   exit 1
 fi
 
 for dep in ip wg; do
   if ! command -v "$dep" >/dev/null 2>&1; then
-    echo "error: missing dependency: $dep" >&2
+    error "missing dependency: $dep"
     exit 1
   fi
 done
 if ! command -v rp >/dev/null 2>&1 && ! command -v rosenpass >/dev/null 2>&1; then
-  echo "error: rosenpass (binary 'rp' or 'rosenpass') is required but not found" >&2
-  echo "install hint: https://rosenpass.eu/docs/rosenpass-tool/guides/linux/" >&2
+  error "rosenpass (binary 'rp' or 'rosenpass') is required but not found"
+  error "install hint: https://rosenpass.eu/docs/rosenpass-tool/guides/linux/"
   exit 1
 fi
 
@@ -30,7 +42,7 @@ ROLE="${ROLE:-panel}"
 case "$ROLE" in
   panel) OTHER_ROLE="node" ;;
   node)  OTHER_ROLE="panel" ;;
-  *) echo "error: role must be panel or node" >&2; exit 1 ;;
+  *) error "role must be panel or node"; exit 1 ;;
 esac
 
 # This server's public IP/domain (panel uses it to listen; node uses the panel's).
@@ -56,10 +68,11 @@ RP_PORT="${RP_PORT:-9999}"
 WG_PORT=$((RP_PORT + 1))
 
 echo
-echo "==> generating Rosenpass key pair for this server (vpn/keys/)"
+info "generating Rosenpass key pair for this server (vpn/keys/)"
 mkdir -p keys
 rp genkey "keys/${ROLE}.rosenpass-secret"
 rp pubkey "keys/${ROLE}.rosenpass-secret" "keys/${ROLE}.rosenpass-public"
+ok "key pair ready: keys/${ROLE}.rosenpass-secret / -public"
 
 if [[ "$ROLE" == "panel" ]]; then
   RP_CMD="rp exchange keys/${ROLE}.rosenpass-secret \\
@@ -97,7 +110,7 @@ EOF
 chmod +x down.sh
 
 echo
-echo "==> next steps"
+info "next steps"
 echo "1. Copy this server's public key to the peer:"
 echo "   scp -r keys/${ROLE}.rosenpass-public user@${PEER_IP}:<repo>/vpn/keys/"
 echo "2. Run this installer on the peer (role=${OTHER_ROLE}), then copy its public"
@@ -108,5 +121,5 @@ echo "   to ${PEER_IP} only."
 echo "5. Verify:  wg show rosenpass0 preshared-keys   (PSK rotates every ~2 min)"
 echo "   and:      ping ${TUNNEL_IP}"
 echo
-echo "Panel setup: add the node with address=${TUNNEL_IP} (the tunnel IP);"
-echo "NODE_PORT no longer needs to be exposed publicly."
+info "panel setup: add the node with address=${TUNNEL_IP} (the tunnel IP);"
+info "NODE_PORT no longer needs to be exposed publicly."
