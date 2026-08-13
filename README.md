@@ -13,6 +13,18 @@ Plain bash + Podman Compose. No Kubernetes, no systemd units, no client generato
 
 ## Quickstart
 
+One-liner (fetches the repo, then runs the installer):
+
+```sh
+# Panel server
+curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash -s -- panel
+# Node server
+curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash -s -- node
+```
+
+Or clone the repo and run `panel/install.sh` / `node/install.sh` directly.
+All scripts refuse to run as root.
+
 ### 1. Panel server
 
 ```sh
@@ -47,8 +59,9 @@ To use your own decoy, drop any static site into `node/web/` before installing.
 
 ## Notes
 
-- Rootless Podman can't bind ports below 1024 without extra setup — run as root
-  or use an ACME DNS challenge.
+- The scripts refuse to run as root (user-level only). For rootless Podman to
+  bind ports 80/443, allow unprivileged low ports once:
+  `sudo sysctl -w net.ipv4.ip_unprivileged_port_start=0` (or use an ACME DNS challenge).
 - The Node's Xray core listens on a Unix socket (no TCP port); all traffic on `443`
   goes through the TLS-terminating proxy, and non-tunnel requests get the decoy site.
 - Routing: CN/RU destinations are blocked by default; Google is whitelisted.

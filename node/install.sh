@@ -3,11 +3,18 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-if ! command -v podman >/dev/null 2>&1; then
-  echo "error: podman is required but not found" >&2
-  echo "install hint: https://podman.io/docs/installation" >&2
+# Refuse root: this stack is user-level only (rootless podman).
+if [[ "$(id -u)" -eq 0 ]]; then
+  echo "error: refusing to run as root; run as your normal user (rootless podman)" >&2
   exit 1
 fi
+
+for dep in podman openssl sed grep curl tar; do
+  if ! command -v "$dep" >/dev/null 2>&1; then
+    echo "error: missing dependency: $dep" >&2
+    exit 1
+  fi
+done
 
 COMPOSE_CMD=()
 if podman compose version >/dev/null 2>&1; then
