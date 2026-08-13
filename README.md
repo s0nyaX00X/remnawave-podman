@@ -3,57 +3,33 @@
 Minimal, security-first Podman installers for a **Remnawave Panel** and **Node** stack.
 Default transport: **VLESS + XHTTP** behind a TLS-terminating reverse proxy (Caddy, ACME).
 
-Plain bash + Podman Compose. No Kubernetes, no systemd units, no client generator.
+Plain bash + Podman Compose.
 
-## Requirements
+## Install
 
-- Podman with `podman compose` or `podman-compose`
-- A domain (or subdomain) pointing to each server (Panel domain, one per Node)
-- Ports `80`/`443` reachable for ACME; `NODE_PORT` reachable from the Panel IP only
-
-## Quickstart
-
-One-liner (fetches the repo, then runs the installer):
+On each server, run:
 
 ```sh
-# Panel server
-curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash -s -- panel
-# Node server
-curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash -s -- node
+curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash
 ```
 
-Or clone the repo and run `panel/install.sh` / `node/install.sh` directly.
-All scripts refuse to run as root.
+The script asks whether to install the **panel** or a **node**, checks dependencies,
+generates secrets, and starts the stack. It refuses to run as root; for rootless
+Podman to bind ports 80/443, allow unprivileged low ports once:
+`sudo sysctl -w net.ipv4.ip_unprivileged_port_start=0`.
 
-Installs to `~/.local/share/remnawave-podman`; re-running updates files but
-keeps `.env`, `web/` and `sockets/`.
+Installs to `~/.local/share/remnawave-podman`; re-running updates files but keeps
+`.env`, `web/` and `sockets/`.
 
-### 1. Panel server
+### After installing the panel
 
-```sh
-cd panel
-./install.sh
-```
-
-Generates secrets, prompts for the panel domain, starts the stack.
 Open `https://<panel-domain>` and register the first account — it becomes super-admin.
 
-### 2. Node server
+### After installing a node
 
-```sh
-cd node
-./install.sh
-```
-
-Prompts for `NODE_PORT`, `SECRET_KEY`, `NODE_DOMAIN`; downloads a decoy web app
-(skip with `--no-decoy`); starts the stack. Re-running keeps existing values.
-To use your own decoy, drop any static site into `node/web/` before installing.
-
-### 3. Add the node in the Panel
-
-- address = `NODE_DOMAIN`, port = `NODE_PORT`
-- config profile: `VLESS-XHTTP-TLS` (see `profiles/`)
-- Host: network `xhttp`, security `tls`, port `443`, SNI = `NODE_DOMAIN`, path `/x`
+In the Panel: add the node (address = `NODE_DOMAIN`, port = `NODE_PORT`, profile
+`VLESS-XHTTP-TLS`), then create a Host (network `xhttp`, security `tls`, port `443`,
+SNI = `NODE_DOMAIN`, path `/x`).
 
 ## Firewall
 
@@ -62,26 +38,13 @@ To use your own decoy, drop any static site into `node/web/` before installing.
 
 ## Notes
 
-- The scripts refuse to run as root (user-level only). For rootless Podman to
-  bind ports 80/443, allow unprivileged low ports once:
-  `sudo sysctl -w net.ipv4.ip_unprivileged_port_start=0` (or use an ACME DNS challenge).
 - The Node's Xray core listens on a Unix socket (no TCP port); all traffic on `443`
-  goes through the TLS-terminating proxy, and non-tunnel requests get the decoy site.
+  goes through the TLS-terminating proxy, and non-tunnel requests get a decoy site.
 - Routing: CN/RU destinations are blocked by default; Google is whitelisted.
-- XMUX connection rotation (randomized reuse ranges) is the core anti-RKN
-  mechanism. In Remnawave the profile's `xhttpSettings.extra` is the single
-  source of truth: the Panel passes it through to the Node's xray config AND
-  uses it as the default `extra` for generated client configs (verified in
-  remnawave/backend `resolve-proxy-config.service.ts`: Host override wins,
-  profile extra is the fallback). Per-node override: the Host form's
-  `xhttpExtraParams` field; full client JSON control: Subscription → Templates →
-  Xray JSON. Reference: `profiles/vless-xhttp-tls.client.json`.
-  Note: stream-up uplinks also carry a gRPC `Content-Type` header by default
-  (camouflage, not the gRPC protocol; `noGRPCHeader` can disable it).
-- Transport is **H2-only** (ALPN `h2` everywhere, HTTP/1.1 disabled);
-  QUIC/H3 is an optional client-side extra.
-- Optional: encrypt the Panel↔Node channel with a post-quantum WireGuard tunnel
-  (Rosenpass) — see `vpn/`.
+- Anti-RKN: XMUX connection rotation + randomized header padding live in the
+  profile's `xhttpSettings.extra` (flows to both Node and clients; per-node
+  override via the Host's `xhttpExtraParams`). Transport is H2-only.
+- Optional: post-quantum Panel↔Node tunnel (WireGuard + Rosenpass) — see `vpn/`.
 
 ## Sources
 

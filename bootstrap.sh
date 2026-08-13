@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# One-shot installer: curl -fsSL <this-URL> | bash -s -- panel|node
-# Downloads the repo to ~/.local/share/remnawave-podman and runs the target installer.
+# One-shot installer: curl -fsSL <this-URL> | bash
+# Interactive: asks panel|node, then downloads the repo to
+# ~/.local/share/remnawave-podman and runs the target installer.
 set -euo pipefail
 
 # Color helpers: [info] [ok] [warn] [error] — colors only when stdout is a TTY
@@ -15,15 +16,6 @@ ok()    { printf '%b[ok]%b %s\n' "$C_OK" "$C_END" "$*"; }
 warn()  { printf '%b[warn]%b %s\n' "$C_WARN" "$C_END" "$*" >&2; }
 error() { printf '%b[error]%b %s\n' "$C_ERR" "$C_END" "$*" >&2; }
 
-TARGET="${1:-}"
-case "$TARGET" in
-  panel|node) ;;
-  *)
-    error "usage: curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/bootstrap.sh | bash -s -- panel|node"
-    exit 1
-    ;;
-esac
-
 # Refuse root: user-level only.
 if [[ "$(id -u)" -eq 0 ]]; then
   error "refusing to run as root; run as your normal user (rootless podman)"
@@ -36,6 +28,16 @@ for dep in curl tar; do
     exit 1
   fi
 done
+
+TARGET="${1:-}"
+if [[ "$TARGET" != "panel" && "$TARGET" != "node" ]]; then
+  read -r -p "Install (panel|node) [panel]: " TARGET
+  TARGET="${TARGET:-panel}"
+  case "$TARGET" in
+    panel|node) ;;
+    *) error "unknown target: $TARGET (use panel or node)"; exit 1 ;;
+  esac
+fi
 
 DEST="${XDG_DATA_HOME:-$HOME/.local/share}/remnawave-podman"
 REPO="https://github.com/s0nyaX00X/remnawave-podman"
