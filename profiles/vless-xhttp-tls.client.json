@@ -1,0 +1,50 @@
+{
+  "outbounds": [
+    {
+      "protocol": "vless",
+      "tag": "proxy",
+      "settings": {
+        "vnext": [
+          {
+            "address": "NODE_DOMAIN",
+            "port": 443,
+            "users": [
+              {
+                "id": "USER_UUID",
+                "flow": "",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "NODE_DOMAIN",
+          "fingerprint": "chrome",
+          "alpn": ["h2", "http/1.1"]
+        },
+        "xhttpSettings": {
+          "path": "/x",
+          "mode": "auto",
+          "extra": {
+            "xPaddingBytes": "100-1000",
+            "noGRPCHeader": false,
+            "scMaxEachPostBytes": 1000000,
+            "scMinPostsIntervalMs": "10-50",
+            "xmux": {
+              "maxConcurrency": "16-32",
+              "maxConnections": 0,
+              "cMaxReuseTimes": 0,
+              "hMaxRequestTimes": "600-900",
+              "hMaxReusableSecs": "1800-3000",
+              "hKeepAlivePeriod": 0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

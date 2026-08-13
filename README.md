@@ -68,6 +68,8 @@ To use your own decoy, drop any static site into `node/web/` before installing.
 - The Node's Xray core listens on a Unix socket (no TCP port); all traffic on `443`
   goes through the TLS-terminating proxy, and non-tunnel requests get the decoy site.
 - Routing: CN/RU destinations are blocked by default; Google is whitelisted.
+- XMUX connection rotation (randomized reuse ranges) is the core anti-RKN
+  mechanism — client-side only, see `profiles/vless-xhttp-tls.client.json`.
 - Optional: encrypt the Panel↔Node channel with a post-quantum WireGuard tunnel
   (Rosenpass) — see `vpn/`.
 
