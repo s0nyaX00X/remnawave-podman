@@ -25,6 +25,9 @@ curl -fsSL https://raw.githubusercontent.com/s0nyaX00X/remnawave-podman/main/boo
 Or clone the repo and run `panel/install.sh` / `node/install.sh` directly.
 All scripts refuse to run as root.
 
+Installs to `~/.local/share/remnawave-podman`; re-running updates files but
+keeps `.env`, `web/` and `sockets/`.
+
 ### 1. Panel server
 
 ```sh
