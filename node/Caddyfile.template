@@ -1,0 +1,11 @@
+NODE_DOMAIN {
+    root * /srv/web
+    handle /x/* {
+        reverse_proxy unix//var/run/remnawave/xray.sock
+    }
+    handle {
+        encode zstd gzip
+        try_files {path} /index.html
+        file_server
+    }
+}

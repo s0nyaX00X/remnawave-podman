@@ -1,0 +1,6 @@
+.env
+sockets/
+web/
+caddy-data/
+caddy-config/
+*.log

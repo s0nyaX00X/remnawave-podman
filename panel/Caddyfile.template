@@ -1,0 +1,3 @@
+PANEL_DOMAIN {
+	reverse_proxy remnawave:3000
+}

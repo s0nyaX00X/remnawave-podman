@@ -1,0 +1,28 @@
+services:
+  remnanode:
+    image: remnawave/node:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      NODE_PORT: ${NODE_PORT:-2222}
+      SECRET_KEY: ${SECRET_KEY:-change_me}
+    volumes:
+      - ./sockets:/var/run/remnawave
+    # Optional node logs (document only):
+    # volumes:
+    #   - /var/log/remnanode:/var/log/remnanode
+
+  caddy:
+    image: docker.io/library/caddy:2-alpine
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./sockets:/var/run/remnawave
+      - ./web:/srv/web:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  caddy-data:
+  caddy-config:

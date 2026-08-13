@@ -1,0 +1,94 @@
+services:
+  remnawave-db:
+    image: postgres:18.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      TZ: UTC
+    ports:
+      - "127.0.0.1:6767:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  remnawave-redis:
+    image: valkey/valkey:9-alpine
+    restart: unless-stopped
+    command:
+      - valkey-server
+      - --port
+      - "0"
+      - --unixsocket
+      - /var/run/valkey/valkey.sock
+      - --unixsocketperm
+      - "777"
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - valkey-socket:/var/run/valkey
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-s", "/var/run/valkey/valkey.sock", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  remnawave:
+    image: remnawave/backend:3
+    restart: unless-stopped
+    environment:
+      APP_PORT: ${APP_PORT:-3000}
+      METRICS_PORT: ${METRICS_PORT:-3001}
+      API_INSTANCES: ${API_INSTANCES:-1}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:change_me@remnawave-db:5432/postgres}
+      REDIS_SOCKET: /var/run/valkey/valkey.sock
+      APP_SECRET: ${APP_SECRET:-change_me}
+      PANEL_DOMAIN: ${PANEL_DOMAIN:-panel.example.com}
+      FRONT_END_DOMAIN: ${FRONT_END_DOMAIN:-*}
+      SUB_PUBLIC_DOMAIN: ${SUB_PUBLIC_DOMAIN:-}
+      METRICS_USER: ${METRICS_USER:-admin}
+      METRICS_PASS: ${METRICS_PASS:-change_me}
+      WEBHOOK_SECRET_HEADER: ${WEBHOOK_SECRET_HEADER:-change_me}
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+      - "127.0.0.1:${METRICS_PORT:-3001}:3001"
+    volumes:
+      - valkey-socket:/var/run/valkey
+    depends_on:
+      remnawave-db:
+        condition: service_healthy
+      remnawave-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:$${METRICS_PORT:-3001}/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  caddy:
+    image: docker.io/library/caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - remnawave
+
+volumes:
+  postgres-data:
+  valkey-socket:
+  caddy-data:
+  caddy-config:
