@@ -6,3 +6,6 @@ caddy-data/
 caddy-config/
 *.log
 docs/
+vpn/keys/
+vpn/up.sh
+vpn/down.sh

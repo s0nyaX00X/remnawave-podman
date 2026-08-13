@@ -3,15 +3,27 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# Color helpers: [info] [ok] [warn] [error] — colors only when stdout is a TTY
+# (and NO_COLOR is unset); tags stay in logs/pipes.
+if [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+  C_INFO='\033[1;34m'; C_OK='\033[1;32m'; C_WARN='\033[1;33m'; C_ERR='\033[1;31m'; C_END='\033[0m'
+else
+  C_INFO=''; C_OK=''; C_WARN=''; C_ERR=''; C_END=''
+fi
+info()  { printf '%b[info]%b %s\n' "$C_INFO" "$C_END" "$*"; }
+ok()    { printf '%b[ok]%b %s\n' "$C_OK" "$C_END" "$*"; }
+warn()  { printf '%b[warn]%b %s\n' "$C_WARN" "$C_END" "$*" >&2; }
+error() { printf '%b[error]%b %s\n' "$C_ERR" "$C_END" "$*" >&2; }
+
 # Refuse root: this stack is user-level only (rootless podman).
 if [[ "$(id -u)" -eq 0 ]]; then
-  echo "error: refusing to run as root; run as your normal user (rootless podman)" >&2
+  error "refusing to run as root; run as your normal user (rootless podman)"
   exit 1
 fi
 
 for dep in podman openssl sed grep; do
   if ! command -v "$dep" >/dev/null 2>&1; then
-    echo "error: missing dependency: $dep" >&2
+    error "missing dependency: $dep"
     exit 1
   fi
 done
@@ -22,8 +34,8 @@ if podman compose version >/dev/null 2>&1; then
 elif command -v podman-compose >/dev/null 2>&1; then
   COMPOSE_CMD=(podman-compose)
 else
-  echo "error: 'podman compose' or 'podman-compose' is required but not found" >&2
-  echo "install hint: enable podman's compose provider or install podman-compose" >&2
+  error "'podman compose' or 'podman-compose' is required but not found"
+  error "install hint: enable podman's compose provider or install podman-compose"
   exit 1
 fi
 
@@ -81,6 +93,7 @@ prompt_if_unset SUB_PUBLIC_DOMAIN "Subscription public domain/path" "$(get_env P
 
 sed "s|PANEL_DOMAIN|$(get_env PANEL_DOMAIN)|g" Caddyfile.template > Caddyfile
 
+info "starting stack (${COMPOSE_CMD[*]} up -d)"
 "${COMPOSE_CMD[@]}" -f compose.yaml up -d
 
 wait_for_health() {
@@ -102,10 +115,12 @@ wait_for_health() {
 }
 
 if ! wait_for_health remnawave; then
-  echo "warning: remnawave backend is not healthy yet; check '${COMPOSE_CMD[*]} logs remnawave'" >&2
+  warn "remnawave backend is not healthy yet; check '${COMPOSE_CMD[*]} logs remnawave'"
+else
+  ok "remnawave backend is healthy"
 fi
 
 echo
-echo "Panel is starting at https://$(get_env PANEL_DOMAIN)"
-echo "1. Register the first account; it becomes super-admin."
-echo "2. Then run node/install.sh on the node server and add the node in the panel."
+info "Panel is starting at https://$(get_env PANEL_DOMAIN)"
+info "1. Register the first account; it becomes super-admin."
+info "2. Then run node/install.sh on the node server and add the node in the panel."
