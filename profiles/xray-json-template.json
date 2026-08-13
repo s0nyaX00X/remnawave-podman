@@ -1,0 +1,119 @@
+{
+  "remnawave": {
+    "injectHosts": [
+      {
+        "selector": {
+          "type": "remarkRegex",
+          "pattern": "^proxy-"
+        },
+        "tagPrefix": "proxy"
+      }
+    ]
+  },
+  "burstObservatory": {
+    "pingConfig": {
+      "timeout": "3s",
+      "interval": "1m",
+      "sampling": 1,
+      "destination": "http://www.gstatic.com/generate_204",
+      "connectivity": ""
+    },
+    "subjectSelector": ["proxy"]
+  },
+  "dns": {
+    "servers": ["https://1.1.1.1/dns-query", "https://1.0.0.1/dns-query"],
+    "queryStrategy": "UseIP"
+  },
+  "routing": {
+    "balancers": [
+      {
+        "tag": "Super_Balancer",
+        "selector": ["proxy"],
+        "strategy": {
+          "type": "leastLoad",
+          "settings": {
+            "maxRTT": "1s",
+            "expected": 2,
+            "baselines": ["1s"],
+            "tolerance": 0.01
+          }
+        },
+        "fallbackTag": "block"
+      }
+    ],
+    "rules": [
+      {
+        "type": "field",
+        "ip": ["geoip:private"],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "geosite:google",
+          "geosite:youtube",
+          "domain:gmail.com",
+          "domain:gemini.google.com",
+          "domain:gemini.google",
+          "domain:googleapis.cn",
+          "domain:googleapis-cn.com",
+          "domain:gstatic.cn",
+          "domain:gstatic-cn.com"
+        ],
+        "balancerTag": "Super_Balancer"
+      },
+      {
+        "type": "field",
+        "ip": ["geoip:cn", "geoip:ru"],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": ["geosite:cn", "geosite:category-ru"],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "balancerTag": "Super_Balancer"
+      }
+    ],
+    "domainMatcher": "hybrid",
+    "domainStrategy": "IPIfNonMatch"
+  },
+  "inbounds": [
+    {
+      "tag": "socks",
+      "port": 10808,
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "settings": {
+        "udp": true,
+        "auth": "noauth"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      }
+    },
+    {
+      "tag": "http",
+      "port": 10809,
+      "listen": "127.0.0.1",
+      "protocol": "http",
+      "settings": {}
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {}
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole",
+      "settings": {}
+    }
+  ]
+}

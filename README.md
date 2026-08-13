@@ -47,6 +47,11 @@ SNI = `NODE_DOMAIN`, path `/x`).
   profile's `xhttpSettings.extra` (flows to both Node and clients; per-node
   override via the Host's `xhttpExtraParams`). Transport is H2-only.
 - Optional: post-quantum Panel↔Node tunnel (WireGuard + Rosenpass) — see `vpn/`.
+- Multi-node client templates (`profiles/xray-json-template*.json`): paste into
+  Panel → Subscription → Templates → Xray JSON, assign to a visible virtual
+  Host; name participating Hosts `proxy-*` and hide them. `xray-json-template.json`
+  uses Cloudflare DoH; `xray-json-template-mullvad.json` (Mullvad DoH) is the
+  paranoid variant — reserved for upcoming extensions.
 
 ## Sources
 
