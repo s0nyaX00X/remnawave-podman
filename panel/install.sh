@@ -42,6 +42,7 @@ fi
 if [[ ! -f .env ]]; then
   cp .env.example .env
 fi
+chmod 600 .env
 
 get_env() {
   sed -nE "s|^${1}=||p" .env | tail -n 1

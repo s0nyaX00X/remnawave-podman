@@ -71,6 +71,7 @@ NODE_PORT=${NODE_PORT}
 SECRET_KEY=${SECRET_KEY}
 NODE_DOMAIN=${NODE_DOMAIN}
 EOF
+chmod 600 .env
 
 mkdir -p sockets web
 
@@ -80,7 +81,13 @@ elif [[ -f web/index.html ]]; then
   info "web/index.html already exists; keeping current decoy"
 else
   info "downloading Element Web v1.12.25 as the Caddy decoy..."
+  ELEMENT_SHA256="14d7f2671eb1fbccc690e7f176042d72ed2b4e34f7326a007e8b1540b1e748bb"
   curl -fsSL "https://github.com/element-hq/element-web/releases/download/v1.12.25/element-v1.12.25.tar.gz" -o element-web.tar.gz
+  if ! echo "$ELEMENT_SHA256  element-web.tar.gz" | sha256sum -c - >/dev/null 2>&1; then
+    error "Element Web checksum mismatch; aborting (possible tampering or version bump)"
+    rm -f element-web.tar.gz
+    exit 1
+  fi
   tar -xzf element-web.tar.gz -C web --strip-components=1
   rm -f element-web.tar.gz
   if [[ ! -f web/index.html ]]; then
