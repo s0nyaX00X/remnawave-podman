@@ -53,6 +53,12 @@ SNI = `NODE_DOMAIN`, path `/x`).
   uses Cloudflare DoH; `xray-json-template-mullvad.json` (Mullvad DoH) is the
   paranoid variant — injected outbounds are tagged `tor*` and `.onion` traffic is
   routed through them to the node's Tor exit.
+  Setup checklist: (1) Node → Change Profile → `VLESS-XHTTP-TLS[-TOR]`;
+  (2) Subscription → Settings → enable **Serve JSON at base subscription**
+  (otherwise v2rayN-class clients get Base64 and never see the injected
+  balancer/routing); (3) virtual Host → Advanced → select the template;
+  (4) participating `proxy-*` Hosts hidden and enabled;
+  (5) enable the inbound in the user's Internal Squad.
 - Optional Tor exit ("dokomo-door"): the node installer can start an official Tor
   container (SOCKS5 on 127.0.0.1:9050, never installed on the host). Use the
   `VLESS-XHTTP-TLS-TOR` profile (`profiles/vless-xhttp-tls-TOR.json`) to route
